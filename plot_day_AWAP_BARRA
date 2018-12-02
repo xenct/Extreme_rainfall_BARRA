@@ -1,0 +1,214 @@
+"script to plot 2 maps. One of 24 hour period from both AWAP and BARRA"
+"run from VDI home"
+
+# first plot AWAP
+
+
+rain_date = date(2012, 6, 5)
+
+# Get AWAP data
+filename = "Documents/AWAP_PRCP_2012-2013_0.5deg_land.nc"
+data = Dataset(filename, 'r')
+
+# Select the date you want
+rain_date_data = data['pre'][np.where(data['time'][:] == float(rain_date.strftime('%Y%m%d.')))][0]
+
+
+lat_lon_mask, lats, lons = lat_lon_mask(lons_full = data['lon'][:], lats_full = data['lat'][:], lon_min = 135, lon_max = 155, lat_min = -45, lat_max = -30)
+
+data.close()
+
+title = f"{rain_date.strftime('%d %b %Y')} AWAP rainfall"
+data = rain_date_data[lat_lon_mask].reshape((len(lats), len(lons)))
+
+# Define colours and levels for colormaps
+prcp_colours = [
+                   "#FFFFFF", 
+                   '#ffffd9',
+                   '#edf8b1',
+                   '#c7e9b4',
+                   '#7fcdbb',
+                   '#41b6c4',
+                   '#1d91c0',
+                   '#225ea8',
+                   '#253494',
+                   '#081d58',
+                   "#4B0082"]
+prcp_colormap = matplotlib.colors.ListedColormap(prcp_colours)
+levels = [0., 5, 10, 20, 30, 40, 60, 100, 150, 200, 300, 500]
+
+
+
+def plot_prcp_map(data, lats, lons, title, units, image_filename):
+    """This function takes a two dimension data set on map coordinates 
+and saves a png image with titles and units specified.  The colour scale of 
+the map is custom with yellow for low values and blues for high."""
+#    lats.sort() # need for awap not barra
+#    lats = np.flip(lats,0) #need for awap not barra
+#    lons.sort()
+    fig = plt.figure() # a new figure window
+    ax = fig.add_subplot(1, 1, 1) # specify (nrows, ncols, axnum)
+    ax.set_title(title, fontsize = 12)
+
+    map = Basemap(projection = "mill", llcrnrlon = lons[0], llcrnrlat = lats[0], urcrnrlon = lons[-1], urcrnrlat = lats[-1], resolution = 'l') #swap lats indices
+    map.drawcoastlines()
+    map.drawmapboundary()
+    map.drawparallels(np.arange(-90.,120.,5.),labels=[1,0,0,0])
+    map.drawmeridians(np.arange(-180.,180.,5.),labels=[0,0,0,1])
+    
+    llons, llats = np.meshgrid(lons, lats)
+    x,y = map(llons,llats)
+
+    # titles
+    plt.title(title)
+    plt.xlabel("\n\nLongitude")
+    plt.ylabel("Latitude\n\n")
+
+    #colorbar
+    norm = matplotlib.colors.BoundaryNorm(levels, 11)
+    cs = map.pcolormesh(x, y, data, norm = norm, cmap = prcp_colormap)
+    cbar = plt.colorbar(ticks = levels[:-1], shrink = 0.8, extend = "max")
+    cbar.ax.set_ylabel(f"Precipitation ({units})")
+    cbar.ax.set_xticklabels(levels)
+
+#    plt.savefig(f"{image_filename}")
+#    print(f"{image_filename} successfully created")
+    return
+
+def map_BARRA_day(data, lats, lons):
+    """This function takes a two dimension data set on map coordinates 
+and saves a png image with titles and units specified.  The colour scale of 
+the map is custom with yellow for low values and blues for high."""
+#    lats.sort() # need for awap not barra
+#    lats = np.flip(lats,0) #need for awap not barra
+#    lons.sort()
+#    fig = plt.figure() # a new figure window
+#    ax = fig.add_subplot(1, 1, 1) # specify (nrows, ncols, axnum)
+
+    map = Basemap(projection = "mill", llcrnrlon = 135, llcrnrlat = -45, urcrnrlon = 155, urcrnrlat = -30, resolution = 'l') #swap lats indices
+    map.drawcoastlines()
+    map.drawmapboundary()
+    map.drawparallels(np.arange(-90.,120.,5.),labels=[1,0,0,0])
+    map.drawmeridians(np.arange(-180.,180.,5.),labels=[0,0,0,1])
+    
+    llons, llats = np.meshgrid(lons, lats)
+    x,y = map(llons,llats)
+
+    # titles
+#    plt.title(title)
+#    plt.xlabel("\n\nLongitude")
+#    plt.ylabel("Latitude\n\n")
+
+    #colorbar
+    norm = matplotlib.colors.BoundaryNorm(levels, len(levels)-1)
+    cs = map.pcolormesh(x, y, data, norm = norm, cmap = prcp_colormap)
+    cbar = plt.colorbar(ticks = levels[:-1], shrink = 0.6, extend = "max")
+    cbar.ax.set_ylabel(f"Precipitation (mm)")
+    cbar.ax.set_xticklabels(levels)
+
+#    plt.savefig(f"{image_filename}")
+#    print(f"{image_filename} successfully created")
+    return
+
+#plot_prcp_map(data, 
+# lats,
+# lons,
+# title,
+# units = "mm",
+# image_filename = f"AWAP_rainfall_{rain_date.strftime('%d %b %Y')}")
+
+def map_AWAP_day(data, lats, lons):
+    """This function takes a two dimension data set on map coordinates 
+and saves a png image with titles and units specified.  The colour scale of 
+the map is custom with yellow for low values and blues for high."""
+    lats.sort() # need for awap not barra
+    lats = np.flip(lats,0) #need for awap not barra
+    lons.sort()
+#    fig = plt.figure() # a new figure window
+#    ax = fig.add_subplot(1, 1, 1) # specify (nrows, ncols, axnum)
+
+    map = Basemap(projection = "mill", llcrnrlon = 135, llcrnrlat = -45, urcrnrlon = 155, urcrnrlat = -30, resolution = 'l') #swap lats indices
+    map.drawcoastlines()
+    map.drawmapboundary()
+    map.drawparallels(np.arange(-90.,120.,5.),labels=[1,0,0,0])
+    map.drawmeridians(np.arange(-180.,180.,5.),labels=[0,0,0,1])
+    
+    llons, llats = np.meshgrid(lons, lats)
+    x,y = map(llons,llats)
+
+    # titles
+#    plt.title(title)
+#    plt.xlabel("\n\nLongitude")
+#    plt.ylabel("Latitude\n\n")
+
+    #colorbar
+    norm = matplotlib.colors.BoundaryNorm(levels, len(levels)-1)
+    cs = map.pcolormesh(x, y, data, norm = norm, cmap = prcp_colormap)
+    cbar = plt.colorbar(ticks = levels[:-1], shrink = 0.6, extend = "max")
+    cbar.ax.set_ylabel(f"Precipitation (mm)")
+    cbar.ax.set_xticklabels(levels)
+
+#    plt.savefig(f"{image_filename}")
+#    print(f"{image_filename} successfully created")
+    return
+
+
+# Get BARRA data 
+# need to work in /g/
+from netCDF4 import Dataset
+import matplotlib.pyplot as plt
+import matplotlib
+from mpl_toolkits.basemap import Basemap
+import numpy as np
+
+# Get the BARRA data
+def load_2D_netCDF(filename, var_name, lat_name, lon_name):
+    """This function loads a two dimensional netCDF.
+    Give filename as a string.
+    Give name of measured variable.
+    Give the names of the two spatial coordinates.
+    The function returns the variable, and the two dimenstions"""
+    data = Dataset(filename, 'r')
+    var = data[var_name][:]
+    lats = data[lat_name][:]
+    lons = data[lon_name][:]
+    data.close()
+    return var, lats, lons
+
+rain_date = date(2012, 6, 5) #utc date and time
+hour = 0
+filename = f"/g/data3/w42/gt3409/accum_prcp-BARRA_R-v1-{(rain_date + timedelta(-1)).strftime('%Y%m%d')}.nc"
+var_name = "prcp"
+lat_name = "lats"
+lon_name = "lons"
+
+BARRA_data, lats, lons = load_2D_netCDF(filename, var_name, lat_name, lon_name)
+
+tot_data = np.zeros(BARRA_data[0].shape)
+for hour in range(24):
+    tot_data += BARRA_data[hour]
+
+#title = f"{rain_date.strftime('%d %b %Y')} BARRA rainfall\nSoutheast Australia"
+#data = tot_data
+#units = "mm"
+#image_filename = f"Documents/BARRA_{rain_date.strftime('%d %b %Y')}.png"
+
+
+
+# Create a new figure
+fig = plt.figure(figsize=(8, 8))
+# Map first on the bottom left plot
+ax = fig.add_subplot(223)
+ax.set_title(f"BARRA-R {start_date.strftime('%d %b %Y')} UTC")
+map_BARRA_day(tot_data, BARRA_lats, BARRA_lons)
+
+# map second below
+ax = fig.add_subplot(224)
+ax.set_title(f"AWAP")
+map_AWAP_day(AWAP_prcp, AWAP_lats, AWAP_lons)
+
+plt.savefig("/home/563/gt3409/Documents/BARRA_AWAP_day.png")
+plt.show()
+
+
+

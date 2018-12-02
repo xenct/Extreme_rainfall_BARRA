@@ -1,0 +1,92 @@
+# plot the BARRA_R
+## plot a map (help plotting points from https://peak5390.wordpress.com/2012/12/08/matplotlib-basemap-tutorial-plotting-points-on-a-simple-map/ 28-Mar-2018)(help for plotting raster data from https://annefou.github.io/metos_python/04-plotting/ april 5 2018)
+#this code works from /g/
+
+from netCDF4 import Dataset
+import matplotlib.pyplot as plt
+import matplotlib
+from mpl_toolkits.basemap import Basemap
+import numpy as np
+
+# Get the data
+def load_2D_netCDF(filename, var_name, lat_name, lon_name):
+    """This function loads a two dimensional netCDF.
+    Give filename as a string.
+    Give name of measured variable.
+    Give the names of the two spatial coordinates.
+    The function returns the variable, and the two dimenstions"""
+    data = Dataset(filename, 'r')
+    var = data[var_name][:]
+    lats = data[lat_name][:]
+    lons = data[lon_name][:]
+    data.close()
+    return var, lats, lons
+
+filename = "/g/data3/w42/gt3409/mean_prcp-BARRA_R-v1-20120101-to-20131231.nc"
+var_name = "mean_prcp"
+lat_name = "lats"
+lon_name = "lons"
+
+mean_prcp, lats, lons = load_2D_netCDF(filename, var_name, lat_name, lon_name)
+
+
+def plot_prcp_map(data, lats, lons, title, units, image_filename):
+    """This function takes a two dimension data set on map coordinates 
+and saves a png image with titles and units specified.  The colour scale of 
+the map is Blues."""
+    lats.sort()
+#    lats = np.flip(lats,0)
+    lons.sort()
+    fig = plt.figure() # a new figure window
+    ax = fig.add_subplot(1, 1, 1) # specify (nrows, ncols, axnum)
+    ax.set_title(title, fontsize = 12)
+
+    map = Basemap(projection = "mill", llcrnrlon = lons[0], llcrnrlat = lats[0], urcrnrlon = lons[-1], urcrnrlat = lats[-1], resolution = 'l')
+    map.drawcoastlines()
+    map.drawmapboundary()
+    map.drawparallels(np.arange(-90.,120.,5.),labels=[1,0,0,0])
+    map.drawmeridians(np.arange(-180.,180.,5.),labels=[0,0,0,1])
+    
+    llons, llats = np.meshgrid(lons, lats)
+    x,y = map(llons,llats)
+
+    # titles
+    plt.title(title)
+    plt.xlabel("\n\nLongitude")
+    plt.ylabel("Latitude\n\n")
+
+    #colorbar
+    prcp_colours = [
+                   "#FFFFFF", 
+                   '#ffffd9',
+                   '#edf8b1',
+                   '#c7e9b4',
+                   '#7fcdbb',
+                   '#41b6c4',
+                   '#1d91c0',
+                   '#225ea8',
+                   '#253494',
+                   '#081d58',
+                   "#4B0082"]
+    prcp_colormap = matplotlib.colors.ListedColormap(prcp_colours)
+    levels = [0., 50, 100, 200, 300, 400, 600, 1000, 1500, 2000, 3000, 5000]
+    norm = matplotlib.colors.BoundaryNorm(levels, 11)
+    cs = map.pcolormesh(x, y, data, norm = norm, cmap = prcp_colormap)
+    cbar = plt.colorbar(ticks = levels[:-1], shrink = 0.8, extend = "max")
+    cbar.ax.set_ylabel(f"Precipitation ({units})")
+    cbar.ax.set_xticklabels(levels)
+
+    #plt.savefig(f"{image_filename}")
+    #print(f"{image_filename} successfully created")
+    return
+
+title = "BARRA_R Mean Annual Precipitation for 2012-2013\nSoutheast Australia"
+data = (mean_prcp * 24 * 365)
+units = "mm"
+image_filename = f"Documents/BARRA_annual_2012_2013.png"
+
+plot_prcp_map(data, lats, lons, title, units, image_filename)
+
+plt.show()
+#plt.savefig(f"Documents/{filename[-46:-3]}.png")
+

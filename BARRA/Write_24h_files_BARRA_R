@@ -1,0 +1,114 @@
+# This code aims to write a file for 24 hours of BARRA-R data
+# this code is designed to run on my strudel with username gt3409
+# The code will make a file for each 24 hour 00UTC to 00UTC period
+
+# Import packages
+from netCDF4 import Dataset                                     
+import numpy as np
+import datetime
+
+# Get filenames to read for the days
+def list_source_filenames(start_date, end_date):
+    """This function takes you to the BARRA_R/v1 directory, then takes
+    the start date and end date as datetime objects and makes a 
+    list of all possible forecats and analysis BARRA_R files in the 
+    ma05 group which have arrays needed to make a hourly dataset from
+    the start date up until, but not including the end date.
+    The function returns a list of analysis files "an_filenames" and
+    a list of forecast files "fc_filenames".
+    """
+    delta = end_date - start_date
+    an_filenames = []
+    fc_filenames = []
+    for day in range(delta.days):
+        date = start_date + datetime.timedelta(day)
+        year = date.year
+        month = date.month
+        day = date.day
+        for hour in ["00", "06", "12", "18"]:
+            an_filenames.append(f"/g/data/ma05/BARRA_R/v1/analysis/spec/accum_prcp/{year}/{month:02d}/accum_prcp-an-spec-PT0H-BARRA_R-v1-{year}{month:02d}{day:02d}T{hour}00Z.nc")
+            fc_filenames.append(f"/g/data/ma05/BARRA_R/v1/forecast/spec_proc/accum_prcp/{year}/{month:02d}/accum_prcp-fc-spec_proc-PT1H-BARRA_R-v1-{year}{month:02d}{day:02d}T{hour}00Z.nc")
+    return an_filenames, fc_filenames
+
+# Load the data from the filenames
+def get_hourly_from_files(analysis_files, forecast_files, lon_min = 0, lon_max = 360, lat_min = -90, lat_max = 90):
+    """ This function takes a list of analysis and a list of forecast
+    netCDF filenames, reads them in, creates 6 hourly data for each 
+    file pair saved to my home directory in Strudel.
+    """
+    if len(analysis_files) != len(forecast_files):
+        return "Must have equal analysis files and forecast files"	# Quit function if this is wrong
+    # Get the lat and lon of the study area. Only calculate this once as it stays the same
+    an_data = Dataset(analysis_files[0], "r")
+    lat = an_data.variables["latitude"]
+    lat_mask = (np.array(lat) > lat_min) & (np.array(lat) < lat_max)
+    lon = an_data.variables["longitude"]
+    lon_mask = (np.array(lon) > lon_min) & (np.array(lon) < lon_max)
+    hourly_prcp = {}	# This dictionary will store the hourly rainfall totals
+    
+    for an, fc in zip(analysis_files, forecast_files):
+        # for every file pair get the data and calculate 6 * hourly rainfall arrays
+        an_data = Dataset(an, "r")
+        fc_data = Dataset(fc, "r")
+        an_accum_prcp = an_data.variables['accum_prcp'][lat_mask,lon_mask]
+        fc_accum_prcp = fc_data.variables['accum_prcp'][0:6,lat_mask,lon_mask]
+        for i in range(6):
+            # For the first six hours of forecasts calculate the hourly rainfall and store it under "YYYYMMDDHH"
+            date_h = datetime.datetime.utcfromtimestamp(3600*(fc_data.variables["time_bnds"][:][:][:,1][i] - 1)).strftime('%Y%m%d%H')
+            if i == 0:
+                hourly_prcp[f"{date_h}"] = fc_accum_prcp[i] - an_accum_prcp
+            else:
+                hourly_prcp[f"{date_h}"] = fc_accum_prcp[i] - fc_accum_prcp[i - 1]
+    return lat[lat_mask], lon[lon_mask], hourly_prcp
+
+# Write the new dataset as a .nc file
+def write_nc_dataset(lat, lon, hourly_prcp):
+    """This function takes the lists(?) of latitude and longitude, and the 
+    dictionary of 24 arrays of hourly precipitation and writes a .nc file
+    to my home directory on Strudle. This file is three dimensional 
+    (24, len(lat), len(lon)).  The file is called hourly{date} where date
+    is YYYYMMDD.
+    """
+    # First, set the dimensions of the data:
+    nx = len(lon)
+    ny = len(lat)
+    # Then, open a new netCDF file for writing
+    hour_list = sorted(hourly_prcp.keys())
+    date = hour_list[0][:-2]   
+    ncfile = Dataset(f"/home/563/gt3409/Documents/hourly{date}.nc", 'w')
+    # Create the output data    
+    data_out = []
+    for hour in range(24):
+        data_out.append(hourly_prcp[hour_list[hour]])
+    data_out = np.array(data_out)
+    # Create x, y, and t dimensions
+    ncfile.createDimension('time', 24)
+    ncfile.createDimension('latitude', ny)
+    ncfile.createDimension('longitude', nx)
+    # Create the variable
+    prcpnc = ncfile.createVariable('precipitation_amount', 'float32', ('time', 'latitude', 'longitude'))
+    # Write data to variable
+    prcpnc[:] = data_out
+    # Close the file
+    ncfile.close() 
+    return
+
+# Get filenames to read for the days
+start_date = datetime.date(2011, 1, 2)
+end_date = start_date + datetime.timedelta(1)
+an_filenames, fc_filenames = list_source_filenames(start_date, end_date)
+# Load the data from the filenames
+lat, lon, hourly_prcp = get_hourly_from_files(an_filenames, fc_filenames, lon_min = 135, lon_max = 155, lat_min = -45, lat_max = -30)
+# Save the dataset to file
+write_nc_dataset(lat, lon, hourly_prcp)
+
+
+
+
+
+
+
+
+
+
+
