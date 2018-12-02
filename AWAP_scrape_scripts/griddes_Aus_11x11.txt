@@ -1,0 +1,18 @@
+#
+# cdo remapcon,"this filename" sourcefile.nc newfile.nc
+# gridID 0
+#
+gridtype  = lonlat
+gridsize  = 124000
+xname     = lon
+xlongname = Longitude
+xunits    = degrees_east
+yname     = lat
+ylongname = Latitude
+yunits    = degrees_north
+xsize     = 400
+ysize     = 310
+xfirst    = 112.025
+xinc      = 0.11
+yfirst    = -44.045
+yinc      = 0.11

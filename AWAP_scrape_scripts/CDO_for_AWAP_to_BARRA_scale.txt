@@ -1,0 +1,34 @@
+#cdo codes for regridding, masking for land-sea areas and SE Aust regions
+
+# This cdo creates a mask for the regridded AWAP netCDF. This sets sea to 0m and land to 1m. 
+cdo -f nc -gtc,0 -remapcon,Documents/Project/pre.2010_11deg.nc -topo aust_land_sea_mask.nc
+
+# this cdo regrids the 0.05deg AWAP to 0.11 deg which is equivalent to BARRA scale
+
+for year in {2010..2015}
+do
+    cdo remapcon,"Documents/Project/AWAP_scrape_scripts/griddes_Aus_11x11.txt" Documents/Project/AWAP_05deg/pre.$year.nc Documents/regridded_$year.nc
+    cdo mul Documents/regridded_$year.nc aust_land_sea_mask.nc Documents/ls_mask_regridded_$year.nc
+#    cdo masklonlatbox,135,155,-30,-45 Documents/ls_mask_regridded_$year.nc Documents/ls_mask_SEAmask_regridded_$year.nc
+done
+
+#concatenate the years end to end from 2010 to 2015
+cp Documents/ls_mask_regridded_2010.nc Documents/AWAP_PRCP_2010-2015_0.11deg_land.nc
+for year in {2011..2015}
+do
+    cdo cat Documents/ls_mask_regridded_$year.nc Documents/AWAP_PRCP_2010-2015_0.11deg_land.nc
+done
+
+# change the dates in the file so cdo can do calculations
+cdo settunits,days -setreftime,1900-01-01,0 -settaxis,2010-01-01,00:00:00 Documents/AWAP_PRCP_2010-2015_0.11deg_land.nc Documents/AWAP_PRCP_2010-2015_0.11deg_land_date.nc 
+
+# this cdo give a netCDF with mean seasonal sums over all 4 seasons 
+cdo yseassum -divc,6 Documents/AWAP_PRCP_2010-2015_0.11deg_land_date.nc Documents/AWAP_PRCP_2010-2015_0.11deg_land_DJFtest.nc 
+
+# this cdo chops out the same area as the SEAust area selected for BARRA
+# this is not exactly the same dimensions because awap data doesn't reach down to -45deg
+cdo sellonlatbox,135,155,-30,-45 Documents/AWAP_PRCP_2010-2015_0.11deg_land_date.nc Documents/AWAP_PRCP_2010-2015_0.11deg_land_SEAust.nc
+
+# this CDO combines all the daily BARRA_R data into one netCDF file
+cdo cat /g/data/w42/gt3409/BARRA_R/daily_prcp/*/*/* /g/data/w42/gt3409/BARRA_R/BARRA_R_daily_prcp_2010-2015.nc
+

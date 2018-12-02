@@ -1,0 +1,17 @@
+# change gridsize, xsize, ysize, yfirst(first lon coord), xfirst(first lat coord)
+# gridID 0
+#
+gridtype  = lonlat
+gridsize  = 5984
+xname     = lon
+xlongname = Longitude
+xunits    = degrees_east
+yname     = lat
+ylongname = Latitude
+yunits    = degrees_north
+xsize     = 88
+ysize     = 68
+xfirst    = 112
+xinc      = 1.
+yfirst    = -10
+yinc      = -1.
