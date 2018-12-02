@@ -51,9 +51,12 @@ orient='index', columns=['name', 'lat', 'lon', 'h'])
     return station_info_df, aws_dfs
 
 # Use the function for vic and nsw 
+#vic_aws_info, vic_aws_data = load_AWS_netCDF("Documents/Project/AWS_hourly_station_data/AWS-Metar-data-VIC.nc", var=['prec'])
+#nsw_aws_info, nsw_aws_data = load_AWS_netCDF("Documents/Project/AWS_hourly_station_data/AWS-Metar-data-NSW.nc", var=['prec'])
+#for vdi
 vic_aws_info, vic_aws_data = load_AWS_netCDF("Documents/AWS_data/AWS-Metar-data-VIC.nc", var=['prec'])
-
 nsw_aws_info, nsw_aws_data = load_AWS_netCDF("Documents/AWS_data/AWS-Metar-data-NSW.nc", var=['prec'])
+
 
 # The data has 30 min timesteps, and the value for precipitation is
 # rainfall accumulation since 9am local time. The time is defined by 
@@ -67,9 +70,9 @@ for station in vic_aws_info.index:
     ts = pd.Series(vic_aws_data['prec'][station])
     # restrict period
     ts = ts[ts.index >= datetime(2010,1,1,0, tzinfo=timezone.utc)]
-    # remove sites with too many missing records, must be > 99% complete:
+    # remove sites with too many missing records, must be > 90% complete:
     missing = np.sum(np.isnan(ts))/len(ts)
-    if missing > 0.01:
+    if missing > 0.1:
         continue
     # Calculate the first difference each step of the time series
     diff = ts.diff()
@@ -80,7 +83,7 @@ for station in vic_aws_info.index:
     # than the previous days accumulation. But ignoring this for now,
     # would matter more for smaller rainfall totals
     # Where the 30min rain amount is greater than 175mm replace with nan
-    diff[diff>175] = np.nan
+#    diff[diff>175] = np.nan
     # Save this to the dict
     rain_rate_30min[station] = diff
 
@@ -197,6 +200,7 @@ plt.show()
 # visualise Cumulative wet hours
 for station in df.index:
     if df['cwh'][station][0]:
+        plt.title("CWH")
         plt.scatter(random.randint(-100,100)/2000,df['cwh'][station][1], color='k', alpha = 0.2)
 plt.xlim(-1, 1)
 plt.show()
@@ -207,24 +211,27 @@ for station in df.index:
     plt.scatter(random.randint(-100,100)/2000+1, df['return30day'][station], color='k', alpha=0.2)
     plt.scatter(random.randint(-100,100)/2000+2, df['return7day'][station], color='k', alpha=0.2) 
     plt.scatter(random.randint(-100,100)/2000+3, df['return1day'][station], color='k', alpha=0.2)  
+plt.title("Return period amount")
 plt.xlim(-1, 4)                                                         
 plt.show()   
 
 for station in df.index: 
-    plt.scatter(random.randint(-100,100)/2000+1, df['rx1hr'][station], color = 'k', alpha =0.2)                 
-    plt.scatter(random.randint(-100,100)/2000+3, df['rx3hr'][station], color = 'k', alpha =0.2)  
+    plt.scatter(random.randint(-100,100)/2000+1, df['rx1hr'][station], color='k', alpha=0.2)                 
+    plt.scatter(random.randint(-100,100)/2000+3, df['rx3hr'][station], color='k', alpha=0.2)  
     plt.scatter(random.randint(-100,100)/2000+6, df['rx6hr'][station], color='k', alpha=0.2)  
     plt.scatter(random.randint(-100,100)/2000+12, df['rx12hr'][station], color='k', alpha=0.2) 
     plt.scatter(random.randint(-100,100)/2000+24, df['rx24hr'][station], color='k', alpha=0.2) 
+plt.title("Hourly maximum")
 plt.xlim(0, 25)                                                         
 plt.show()   
 
 for station in df.index: 
-    plt.scatter(random.randint(-100,100)/2000+1, df['r1mmph'][station], color = 'k', alpha =0.2)                 
-    plt.scatter(random.randint(-100,100)/2000+2, df['r5mmph'][station], color = 'k', alpha =0.2)  
+    plt.scatter(random.randint(-100,100)/2000+1, df['r1mmph'][station], color='k', alpha=0.2)                 
+    plt.scatter(random.randint(-100,100)/2000+2, df['r5mmph'][station], color='k', alpha=0.2)  
     plt.scatter(random.randint(-100,100)/2000+3, df['r10mmph'][station], color='k', alpha=0.2)  
     plt.scatter(random.randint(-100,100)/2000+4, df['r20mmph'][station], color='k', alpha=0.2) 
     plt.scatter(random.randint(-100,100)/2000+5, df['r30mmph'][station], color='k', alpha=0.2) 
+plt.title("count of rain rate")
 plt.xlim(0, 6)                                                         
 plt.show()   
 
@@ -253,6 +260,5 @@ map_dots((np.nanmax(prcp_data['AWAP_ann'], 0)), BARRA_lats, BARRA_lons, levels =
 #plt.savefig('Documents
 map_dots((np.nanmax(prcp_data['BARRA_ann'], 0)), BARRA_lats, BARRA_lons, levels = levels['day'], title = "BARRA and AWS Rx1day", cmap_label = "precipitation (mm)") 
 #plt.savefig('Documents
-
 
 
