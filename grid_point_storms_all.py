@@ -31,7 +31,7 @@ def timeseries_subplot(data, nrows, ncols, index, title = 'filter'):
     plt.title(title,pad = -10, fontsize = 10)
     return
 
-BARRA_raw_1d_prcp = np.reshape(prcp_data['BARRA_ann'], BARRA_raw.size)
+BARRA_raw_1d_prcp = np.reshape(BARRA_raw, BARRA_raw.size)
 def hist_subplot(data, nrows, ncols, index):
     plt.subplot(nrows, ncols, index)
     plt.hist(BARRA_raw_1d_prcp, bins = np.arange(0, 500, 25), log = True, color = 'royalblue', alpha = 0.3)
@@ -240,9 +240,4 @@ for i in range(len(list_of_filters)):
                      index = ncol*i+8,
                      levels=np.arange(0,25, 5), # change this color scale
                      title = '')   
-
-
-
-
-
 
