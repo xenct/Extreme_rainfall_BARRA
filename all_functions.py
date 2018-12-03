@@ -245,7 +245,7 @@ def date_range(start_date, end_date):
 It returns a list of dates for each date in order starting at the first date and ending with the last date. Requires: from datetime import timedelta, date, datetime"""
     return [start_date + timedelta(x) for x in range((end_date - start_date).days + 1)]
 
-def BARRA_daily_ts(start_date, end_date, station_coords, n = 1):
+def BARRA_daily_ts(start_date, end_date, station_coords, n = 0):
     """This function combines multiple functions here:
 - date_range()
 - load_3D_netCDF()
